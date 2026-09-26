@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Поставщики
+model provider {
+  id                          Int                @id @default(autoincrement())
+  Name                        String? // Наименование поставщика или ФИО
+  ImageProviders              String // Фото Руковадителя 
+  LogoSupplierCompany         String // Лого компании поставщика 
+  isActive                    Boolean            @default(false) // Активен или нет Поставщик
+  Description                 String // Описание Поставщика
+  SupplierEvaluation          Decimal            @db.Decimal(10, 2) // Оценка поставщика 
+  MinOrderBatch               Int // Минимальная цена заказа
+  RegisteredAddress           String // Юредический адресс
+  ActualAddress               String // Фактический адрес
+  CorrespondencePostalAddress String // Корреспондентский Почтовый адрес
+  NumberPhone                 Int // Номер телефона
+  PostalAddress               String // Офиц. Адресс почты
+  SuppliersWebsite            String? // Сайт поставщика
+  FIOOfTheHead                String // ФИО руководителя
+  DocOfTheHead                String // Документ подтверждающий полномочия руководителя
+  CreateTime                  DateTime           @default(now()) // Время Создания
+  Catalog                     CatalogProviders[] // Каталог товаров поставщика
+}
+
+// Еденицы изменения
+enum Unit {
+  шт
+  кг
+  м
+  палеты
+}
+
+// Каталог товаров поставщика
+model CatalogProviders {
+  id                  Int                   @id @default(autoincrement())
+  NameProduct         String // Название товара
+  Price               Decimal               @db.Decimal(10, 2) // Цена товара
+  QuantityProduct     Int // Наличие на складе
+  CodeProduct         String // Код товара
+  DescriptionProduct  String // Описание товара
+  UnitOfMeasurement   Unit                  @default(шт) // Еденица измерения 
+  providers           provider?            @relation(fields: [providersId], references: [id]) // Привязка каталога к поставщику
+  providersId         Int? // id поставщика
+  DetailedInformation DetailedInformation[] // Подробная информация о товаре
+  @@index([providersId])
+}
+
+// Подробная информация товара 
+model DetailedInformation {
+  id                       Int                             @id @default(autoincrement())
+  ImageProduct             String // Изображение товара
+  Description              String // Описание товара
+  DopInfoUnitOfMeasurement String? // Дополнительная информация Едениц измерения
+  AccurateDescription      AccurateDescriptionContent[] // Точное описание
+  UnitPrice                UnitPriceContent[] // Цена за еденицу товара
+  ConditionsCurrency       String? // Условия валюты
+  ConditionsDiscount       String? // Условия скидки от объема 
+  ConditionsPepayments     String? // Условия предоплаты
+  AddTechnicalAdvantages   AddTechnicalAdvantagesContent[] // Дополнительные технические преимущества
+  catalogProviders         CatalogProviders?               @relation(fields: [catalogProvidersId], references: [id], onDelete: Cascade) // Привязка к каталогу товаров
+  catalogProvidersId       Int? // id товара
+
+  @@index([catalogProvidersId])
+}
+
+// Доп. Тех. Преймущества 
+model AddTechnicalAdvantagesContent {
+  id                    Int                  @id @default(autoincrement())
+  type                  String // Тип Доп. тех. преймущевства
+  description           String // Описание тех. преймущевства
+  SortOrder             Int                  @default(0) // Порядок отображения
+  detailedInformation   DetailedInformation? @relation(fields: [detailedInformationId], references: [id]) // Привязка к подробной инфо о товаре
+  detailedInformationId Int?
+
+  @@index([detailedInformationId])
+}
+
+// Контент Цены за еденицу товара
+model UnitPriceContent {
+  id                    Int                  @id @default(autoincrement())
+  Retail                Int // Розничная цена
+  Bulk                  Int // Оптовая цена
+  WarningMessage        String? // Предупреждающее сообщение о цене
+  SortOrder             Int                  @default(0) // Порядок отображения
+  detailedInformation   DetailedInformation? @relation(fields: [detailedInformationId], references: [id]) // Привязка к подробной инфо о товаре
+  detailedInformationId Int?
+
+  @@index([detailedInformationId])
+}
+
+// Точное описание товара
+model AccurateDescriptionContent {
+  id                    Int                  @id @default(autoincrement())
+  Size                  String // Размер продукта
+  Color                 String // Цвет продукта
+  Compound              CompoundContent[] // Состав/Материалы товара
+  SortOrder             Int                  @default(0) // Порядок отображения
+  detailedInformation   DetailedInformation? @relation(fields: [detailedInformationId], references: [id], onDelete: Cascade) // Привязка точного описания к подробной инфо товара
+  detailedInformationId Int? // id подробной информации товара
+
+  @@index([detailedInformationId])
+}
+
+// Контент Состава/Материалов товара
+model CompoundContent {
+  id                           Int                         @id @default(autoincrement())
+  Compound                     String // Материал/Состав
+  SortOrder                    Int                         @default(0) // Порядок отображения
+  accurateDescriptionContent   AccurateDescriptionContent? @relation(fields: [accurateDescriptionContentId], references: [id], onDelete: Cascade) // Привяка контента Состава/Материалов к точное описание товара 
+  accurateDescriptionContentId Int? // id точного описания товара
+
+  @@index([accurateDescriptionContentId])
+}
