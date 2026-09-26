@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule, ObserveInstrument } from './app.module';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import basicAuth from 'express-basic-auth';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
@@ -10,6 +10,12 @@ async function bootstrap() {
     instrument: ObserveInstrument,
   });
   const logger = new Logger('Bootstrap')
+
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true,
+    transformOptions: {enableImplicitConversion: true},
+    whitelist: true
+  }))
 
 
   app.enableCors({

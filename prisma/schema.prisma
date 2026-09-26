@@ -20,12 +20,12 @@ model provider {
   LogoSupplierCompany         String // Лого компании поставщика 
   isActive                    Boolean            @default(false) // Активен или нет Поставщик
   Description                 String // Описание Поставщика
-  SupplierEvaluation          Decimal            @db.Decimal(10, 2) // Оценка поставщика 
+  SupplierEvaluation          Decimal            @db.Decimal(10, 2) @default(0) // Оценка поставщика 
   MinOrderBatch               Int // Минимальная цена заказа
   RegisteredAddress           String // Юредический адресс
   ActualAddress               String // Фактический адрес
   CorrespondencePostalAddress String // Корреспондентский Почтовый адрес
-  NumberPhone                 Int // Номер телефона
+  NumberPhone                 String // Номер телефона
   PostalAddress               String // Офиц. Адресс почты
   SuppliersWebsite            String? // Сайт поставщика
   FIOOfTheHead                String // ФИО руководителя
@@ -51,10 +51,10 @@ model CatalogProviders {
   CodeProduct         String // Код товара
   DescriptionProduct  String // Описание товара
   UnitOfMeasurement   Unit                  @default(шт) // Еденица измерения 
-  providers           provider?            @relation(fields: [providersId], references: [id]) // Привязка каталога к поставщику
-  providersId         Int? // id поставщика
+  provider          provider?            @relation(fields: [providerId], references: [id]) // Привязка каталога к поставщику
+  providerId         Int? // id поставщика
   DetailedInformation DetailedInformation[] // Подробная информация о товаре
-  @@index([providersId])
+  @@index([providerId])
 }
 
 // Подробная информация товара 
