@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
-import { S3Client, DeleteObjectCommand, ListBucketsCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
+import { S3Client, DeleteObjectCommand, ListBucketsCommand, HeadBucketCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { error } from "console";
 
@@ -22,7 +22,7 @@ export class S3Service implements OnModuleInit {
 
     constructor() {
         this.bucket = process.env.S3BACKED!
-        this.publicURL = process.env.S3URL!
+        this.publicURL = `${process.env.S3URL}/${this.bucket}`
 
         this.s3 = new S3Client({
             endpoint: process.env.S3URL!,
@@ -58,8 +58,8 @@ export class S3Service implements OnModuleInit {
         })
         try {
             await upload.done()
-            return `${this.publicURL}/${this.bucket}/${path}`
-        } catch(error: any){
+            return `${this.publicURL}/${path}`
+        } catch (error: any) {
             this.logger.error(`Не удалось загрузить файл ${file.fieldname} по пути ${path}`, error)
             throw new Error(`Не удалось загрузить файл`, error.message)
         }
@@ -68,15 +68,13 @@ export class S3Service implements OnModuleInit {
     async deleteFile(url: string): Promise<void> {
         const key = this.extractKeyFromUrl(url)
         if (!key) {
-            console.warn(`[S3] Не удалось извлечь ключ из URL: ${url}`);
+            this.logger.warn(`[S3] Не удалось извлечь ключ: "${url}"`)
             return
         }
 
-        await this.s3.send(
-            new DeleteObjectCommand({
-                Bucket: this.bucket,
-                Key: key
-            })
-        )
+        await this.s3.send(new DeleteObjectCommand({
+            Bucket: this.bucket,
+            Key: key
+        }))
     }
 }

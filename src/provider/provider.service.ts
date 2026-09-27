@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { PrismaModule } from "../PrismaConection/prisma.module";
 import { PrismaService } from "../PrismaConection/prisma.service";
 import { createProviderDto } from "./DTO/provider.dto";
@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 
 @Injectable()
 export class ProviderService {
-    private readonly DateNow = `${format(Date.now(), 'yyyy-MM-dd_HH-mm-ss')}`
+    private readonly logger = new Logger(ProviderService.name)
     constructor(
         private readonly prisma: PrismaService,
         private readonly S3: S3Service
@@ -26,56 +26,85 @@ export class ProviderService {
         LogoSupplierCompany: Express.Multer.File,
         DocOfTheHead: Express.Multer.File
     ) {
-        let ImagePathProviders: string = ''
-        let LogoSupplierPathCompany: string = ''
-        let DocOfThePathHead: string = ''
         const PathProviders = `${dto.Name}-${nanoid(8)}`
+        const files = {
+            ImageProviders,
+            LogoSupplierCompany,
+            DocOfTheHead
+        }
+        const entries = await Promise.all(
+            Object.entries(files).map(async ([field, file]) => {
+                if (!file) return [field, ''] as const
 
-        if(ImageProviders){
-            const filename = `${nanoid(8)}-${slugify(ImageProviders.originalname)}`
-            const path = `${PathProviders}/${filename}`
-            ImagePathProviders = await this.S3.uploadFile(ImageProviders, path)
-        }
-        if(LogoSupplierCompany){
-            const filename = `${nanoid(8)}-${slugify(LogoSupplierCompany.originalname)}`
-            const path = `${PathProviders}/${filename}`
-            LogoSupplierPathCompany = await this.S3.uploadFile(LogoSupplierCompany, path)
-        }
-        if(DocOfTheHead){
-            const filename = `${nanoid(8)}-${slugify(DocOfTheHead.originalname)}`
-            const path = `${PathProviders}/${filename}`
-            DocOfThePathHead = await this.S3.uploadFile(DocOfTheHead, path)
-        }
+                const filename = `${nanoid(8)}-${slugify(file.originalname)}`
+                const path = `${PathProviders}/${filename}`
+                const url = await this.S3.uploadFile(file, path)
+
+                return [field, url] as const
+            })
+        )
 
         return this.prisma.provider.create({
             data: {
                 ...dto,
-                ImageProviders: ImagePathProviders,
-                LogoSupplierCompany: LogoSupplierPathCompany,
-                DocOfTheHead: DocOfThePathHead
+                ...Object.fromEntries(entries)
             }
         })
     }
 
-    async deleteAll(){
+    async deleteAll() {
         const providers = await this.prisma.provider.findMany({
-            where:{
-                OR:[
-                    {ImageProviders: {not: ''}},
-                    {LogoSupplierCompany: {not: ''}},
-                    {DocOfTheHead: {not: ''}}
+            where: {
+                OR: [
+                    { ImageProviders: { not: '' } },
+                    { LogoSupplierCompany: { not: '' } },
+                    { DocOfTheHead: { not: '' } }
                 ]
             }
         })
 
-        await Promise.all(
-            providers.map((adv) =>{
-                adv.ImageProviders ? this.S3.deleteFile(adv.ImageProviders): Promise.resolve()
-                adv.LogoSupplierCompany ? this.S3.deleteFile(adv.LogoSupplierCompany): Promise.resolve()
-                adv.DocOfTheHead ? this.S3.deleteFile(adv.DocOfTheHead): Promise.resolve()
-            })
+        await Promise.allSettled(
+            providers.flatMap((adv) => [
+                ...(adv.ImageProviders ? [this.S3.deleteFile(adv.ImageProviders).catch(err =>
+                    this.logger.error(`Ошибка удаления Фото Руковадителя у ${adv.Name} (${adv.id})`, err),
+                )] : []),
+                ...(adv.LogoSupplierCompany ? [this.S3.deleteFile(adv.LogoSupplierCompany).catch(err =>
+                    this.logger.error(`Ошибка удаления Лого компании поставщика у ${adv.Name} (${adv.id})`, err),
+                )] : []),
+                ...(adv.DocOfTheHead ? [this.S3.deleteFile(adv.DocOfTheHead).catch(err =>
+                    this.logger.error(`Ошибка удаления Документ подтверждающий полномочия руководителя у ${adv.Name} (${adv.id})`, err)
+                )] : [])
+            ])
         )
 
+
+
         return this.prisma.provider.deleteMany()
+    }
+
+
+    async deleteById(id: number) {
+        const provider = await this.prisma.provider.findUnique({
+            where: { id }
+        })
+        if (!provider) {
+            throw new NotFoundException(`Не найдено поставщика с id: ${id}`)
+        }
+
+        await Promise.allSettled(
+            [
+                ...(provider.ImageProviders ? [this.S3.deleteFile(provider.ImageProviders).catch(err =>
+                    this.logger.error(`Ошибка удаления Фото Руковадителя у ${provider.Name} (${provider.id})`, err),
+                )] : []),
+                ...(provider.LogoSupplierCompany ? [this.S3.deleteFile(provider.LogoSupplierCompany).catch(err =>
+                    this.logger.error(`Ошибка удаления Лого компании поставщика у ${provider.Name} (${provider.id})`, err),
+                )] : []),
+                ...(provider.DocOfTheHead ? [this.S3.deleteFile(provider.DocOfTheHead).catch(err =>
+                    this.logger.error(`Ошибка удаления Документ подтверждающий полномочия руководителя у ${provider.Name} (${provider.id})`, err),
+                )] : [])
+            ]
+        )
+
+        return this.prisma.provider.delete({ where: { id } })
     }
 }

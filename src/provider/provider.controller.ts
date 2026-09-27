@@ -65,7 +65,14 @@ export class ProviderController{
     @ApiOperation({summary: 'Удалить всех поставщиков'})
     @Delete()
     async deleteAll(){
-        return this.providerService.deleteAll()
+        return await this.providerService.deleteAll()
+    }
+
+
+    @ApiOperation({summary: 'Удалить поставщика по id'})
+    @Delete(':id')
+    async deleteById(@Param('id') id: number){
+        return await this.providerService.deleteById(+id)
     }
 
 }
