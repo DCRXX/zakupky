@@ -1,7 +1,7 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, UploadedFiles, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Post, UploadedFiles, UseInterceptors } from "@nestjs/common";
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ProviderService } from "./provider.service";
-import { createProviderDto, getProviderDto } from "./DTO/provider.dto";
+import { createProviderDto } from "./DTO/provider.dto";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import type { Multer } from 'multer';
 
@@ -9,29 +9,32 @@ type MulterFile = Express.Multer.File
 
 @ApiTags('Поставщики')
 @Controller('provider')
-export class ProviderController{
-    constructor (
+export class ProviderController {
+    constructor(
         private readonly providerService: ProviderService,
-    ){}
+    ) { }
 
-    @ApiOperation({summary: 'Получить всех провайдеров'})
+    @ApiOperation({ summary: 'Получить все карточки поставщиков' })
     @Get()
-    @ApiResponse({
-        status: 200,
-        description: 'Получить всех Поставщиков',
-        type: [getProviderDto]
-    })
-    async getAll(){
-        return await this.providerService.getAll()
+    async getAllCards() {
+        return await this.providerService.getAllCards()
     }
 
-    @ApiOperation({summary: 'Добавить провайдера'})
+    @ApiOperation({ summary: 'Получить все данные 1 поставщика по id' })
+    @Get(':id')
+    async getIdProvider(
+        @Param('id', ParseIntPipe) id: number
+    ) {
+        return this.providerService.getIdProvider(id)
+    }
+
+    @ApiOperation({ summary: 'Добавить поставщика' })
     @Post()
     @ApiConsumes('multipart/form-data')
     @UseInterceptors(FileFieldsInterceptor([
-        {name: 'ImageProviders', maxCount: 1},
-        {name: 'LogoSupplierCompany', maxCount: 1},
-        {name: 'DocOfTheHead', maxCount: 1}
+        { name: 'imageProviders', maxCount: 1 },
+        { name: 'logoSupplierCompany', maxCount: 1 },
+        { name: 'docOfTheHead', maxCount: 1 }
     ]))
     @ApiBody({
         description: 'Описание схемы',
@@ -40,39 +43,26 @@ export class ProviderController{
     async createProviders(
         @Body() dto: createProviderDto,
         @UploadedFiles() files: {
-            ImageProviders?: MulterFile[],
-            LogoSupplierCompany?: MulterFile[],
-            DocOfTheHead?: MulterFile[]
-        } 
-    ){
-        if(!files.DocOfTheHead){
-            throw new BadRequestException('Добавьте - Документ подтверждающий полномочия руководителя')
+            imageProviders?: MulterFile[],
+            logoSupplierCompany?: MulterFile[],
+            docOfTheHead?: MulterFile[]
         }
-        if(!files.ImageProviders){
-            throw new BadRequestException('Добавьте - Фото Руковадителя')
-        }
-        if(!files.LogoSupplierCompany){
-            throw new BadRequestException('Добавьте - Лого компании поставщика')
+    ) {
+        if (!files.imageProviders || !files.logoSupplierCompany || !files.docOfTheHead) {
+            throw new BadRequestException('Все три файла являются обязательными');
         }
 
-        const ImageProviders = files.ImageProviders?.[0]
-        const LogoSupplierCompany = files.LogoSupplierCompany?.[0]
-        const DocOfTheHead = files.DocOfTheHead?.[0]
+        const imageProviders = files.imageProviders?.[0]
+        const logoSupplierCompany = files.logoSupplierCompany?.[0]
+        const docOfTheHead = files.docOfTheHead?.[0]
 
-        return await this.providerService.createProviders(dto, ImageProviders, LogoSupplierCompany, DocOfTheHead)
+        return await this.providerService.createProviders(dto, imageProviders, logoSupplierCompany, docOfTheHead)
     }
 
-    @ApiOperation({summary: 'Удалить всех поставщиков'})
-    @Delete()
-    async deleteAll(){
-        return await this.providerService.deleteAll()
-    }
-
-
-    @ApiOperation({summary: 'Удалить поставщика по id'})
+    @ApiOperation({ summary: 'Удалить поставщика по id' })
     @Delete(':id')
-    async deleteById(@Param('id') id: number){
-        return await this.providerService.deleteById(+id)
+    async deleteById(@Param('id', ParseIntPipe) id: number) {
+        return await this.providerService.deleteById(id)
     }
 
 }

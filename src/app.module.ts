@@ -5,6 +5,10 @@ import { AppService } from './app.service';
 import { PrismaModule } from './PrismaConection/prisma.module';
 import { ProviderModule } from './provider/provider.module';
 import { S3Module } from './S3Conection/S3.module';
+import { catalogProvidersModule } from './CatalogProviders/catalogProviders.module';
+import { DetailedInformationModule } from './DetailedInformation/DetailedInformation.module';
+import { CleanUpService } from './Cleanup.service';
+import { ScheduleModule } from '@nestjs/schedule';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -15,9 +19,10 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       appSecret: process.env.ObserveAppSecret!,
       serviceId: 'zakupky',
     }),
-    PrismaModule, S3Module, ProviderModule
+    ScheduleModule.forRoot(),
+    PrismaModule, S3Module, ProviderModule, catalogProvidersModule, DetailedInformationModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, CleanUpService],
 })
 export class AppModule {}

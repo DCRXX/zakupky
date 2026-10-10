@@ -1,7 +1,7 @@
 import { ApiProperty, IntersectionType, PartialType } from "@nestjs/swagger"
 import { Decimal } from "@prisma/client/runtime/client"
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator'
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
 
 
 export class createProviderDto {
@@ -9,114 +9,71 @@ export class createProviderDto {
     @ApiProperty({ example: '', description: 'Наименование поставщика или ФИО' })
     @IsString()
     @IsNotEmpty()
-    Name: string
+    name: string
 
-    @ApiProperty({ example: '', description: 'Фото Руковадителя ', format: "binary" })
-    ImageProviders: string
+    @ApiProperty({ example: '', description: 'Фото Руководителя ', format: "binary" })
+    imageProviders: string
 
     @ApiProperty({ example: '', description: 'Лого компании поставщика', format: "binary" })
-    LogoSupplierCompany: string
+    logoSupplierCompany: string
 
     @ApiProperty({ description: 'Активен или нет Поставщик' })
     @Transform(({ value }) => value === 'true' || value === true)
     @IsNotEmpty()
+    @IsBoolean()
     isActive: boolean
 
     @ApiProperty({ example: '', description: 'Описание Поставщика' })
     @IsString()
     @IsNotEmpty()
-    Description: string
+    description: string
 
     @ApiProperty({ example: '', description: 'Оценка поставщика ' })
-    @Transform(({ value }) => value !== undefined ? new Decimal(value) : undefined)
+    @IsNumber()
     @IsNotEmpty()
-    SupplierEvaluation: number
+    supplierEvaluation: number
 
-    @ApiProperty({ example: '', description: 'Минимальная цена заказа' })
+    @ApiProperty({ example: '', description: 'Минимальная партия/количество' })
     @Transform(({ value }) => value !== undefined ? parseInt(value, 10) : undefined)
     @IsNumber()
     @IsNotEmpty()
-    MinOrderBatch: number
+    minOrderBatch: number
 
-    @ApiProperty({ example: '', description: 'Юредический адресс' })
+    @ApiProperty({ example: '', description: 'Юридический адрес' })
     @IsString()
     @IsNotEmpty()
-    RegisteredAddress: string
+    registeredAddress: string
 
     @ApiProperty({ example: '', description: 'Фактический адрес' })
     @IsString()
     @IsNotEmpty()
-    ActualAddress: string
+    actualAddress: string
 
     @ApiProperty({ example: '', description: 'Корреспондентский Почтовый адрес' })
     @IsString()
     @IsNotEmpty()
-    CorrespondencePostalAddress: string
+    correspondencePostalAddress: string
 
     @ApiProperty({ example: '', description: 'Номер телефона' })
     @IsString()
     @IsNotEmpty()
-    NumberPhone: string
+    numberPhone: string
 
     @ApiProperty({ example: '', description: 'Офиц. Адресс почты' })
     @IsString()
     @IsNotEmpty()
-    PostalAddress: string
+    postalAddress: string
 
     @ApiProperty({ example: '', description: 'Сайт поставщика' })
     @IsString()
-    @IsNotEmpty()
-    SuppliersWebsite?: string
+    @IsOptional()
+    suppliersWebsite?: string
 
     @ApiProperty({ example: '', description: 'ФИО руководителя' })
     @IsString()
     @IsNotEmpty()
-    FIOOfTheHead: string
+    fioOfTheHead: string
 
     @ApiProperty({ example: '', description: 'Документ подтверждающий полномочия руководителя', format: "binary" })
-    DocOfTheHead: string
+    docOfTheHead: string
 }
-
-class ProviderIdDto {
-    @ApiProperty({ example: 1, })
-    id: number;
-}
-
-export class getProviderDto extends IntersectionType(
-    ProviderIdDto,
-    PartialType(createProviderDto),
-) { }
-
-
-export class createCatelogProviders {
-    @ApiProperty({ example: '', description: 'Название товара' })
-    NameProduct: string
-
-    @ApiProperty({ example: '', description: 'Цена товара' })
-    Price: Decimal
-
-    @ApiProperty({ example: '', description: 'Наличие на складе' })
-    QuantityProduct: number
-
-    @ApiProperty({ example: '', description: ' Код товара' })
-    CodeProduct: string
-
-    @ApiProperty({ example: '', description: 'Описание товара' })
-    DescriptionProduct: string
-
-    @ApiProperty({ example: '', description: 'Описание товара' })
-    UnitOfMeasurement: string
-
-    @ApiProperty({ example: '', description: 'Описание товара' })
-    providerId: number
-}
-
-class CategoryIdDto {
-    @ApiProperty({ example: 1, })
-    id: number;
-}
-
-export class getCategoryDto extends IntersectionType(
-    CategoryIdDto,
-    PartialType(createCatelogProviders),
-) { }

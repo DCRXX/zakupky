@@ -4,6 +4,11 @@ import { AppModule, ObserveInstrument } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import basicAuth from 'express-basic-auth';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { apiReference } from '@scalar/nestjs-api-reference';
+
+export const Domain = process.env.DOMAIN
+export const isDev = process.env.NODE_ENV !== 'production'
+export const port = process.env.PORT || 3000;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -13,7 +18,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
-    transformOptions: {enableImplicitConversion: true},
+    transformOptions: { enableImplicitConversion: true },
     whitelist: true
   }))
 
@@ -26,29 +31,41 @@ async function bootstrap() {
   })
 
   // Swagger
-  const swaggerFulPath = '/docs'
-  const swaggerAuth = basicAuth({
+  const apiFulPath = '/docs'
+  const apiAuth = basicAuth({
     challenge: true,
-    users:{
-      [process.env.SWAGGER_ADMIN!]: process.env.SWAGGER_PASSWORD!
+    users: {
+      [process.env.API_ADMIN!]: process.env.API_PASSWORD!
     }
   })
-  app.use(swaggerFulPath, swaggerAuth)
+  app.use(apiFulPath, apiAuth)
 
   const config = new DocumentBuilder()
-  .setTitle('')
-  .addBasicAuth()
-  .setVersion('1.0')
-  .build()
+    .setTitle('API-Zakypky')
+    .addBasicAuth()
+    .setVersion('1.0')
+    .build()
 
   const document = SwaggerModule.createDocument(app, config)
-  SwaggerModule.setup(swaggerFulPath, app, document)
 
-  const port = process.env.PORT || 3000;
+  app.use(
+    apiFulPath,
+    apiReference({
+      spec: {
+        content: document,
+      },
+      theme: 'deepSpace', 
+      layout: 'classic',
+      darkMode: true,
+      hideModels: false,
+      searchHotKey: 'k',
+    })
+  )
+
   await app.listen(port, '0.0.0.0');
 
-  logger.log(`\n Server Running! \n Port: ${port}`)
-  logger.log(`Swagger Start on: ${process.env.BASE_URL}${swaggerFulPath}`)
-  
+  logger.log(`\n Server Running! \n Port: ${port} \n Domain:${Domain}`)
+  logger.log(`Scalar Start on: ${isDev ? `http://${Domain}:${port}${apiFulPath}` : `https://${Domain}${apiFulPath}`}`)
+
 }
 bootstrap();

@@ -15,64 +15,100 @@ datasource db {
 // Поставщики
 model provider {
   id                          Int                @id @default(autoincrement())
-  Name                        String? // Наименование поставщика или ФИО
-  ImageProviders              String // Фото Руковадителя 
-  LogoSupplierCompany         String // Лого компании поставщика 
+  name                        String? // Наименование поставщика или ФИО
+  imageProviders              String // Фото Руководителя
+  logoSupplierCompany         String // Лого компании поставщика 
   isActive                    Boolean            @default(false) // Активен или нет Поставщик
-  Description                 String // Описание Поставщика
-  SupplierEvaluation          Decimal            @db.Decimal(10, 2) @default(0) // Оценка поставщика 
-  MinOrderBatch               Int // Минимальная цена заказа
-  RegisteredAddress           String // Юредический адресс
-  ActualAddress               String // Фактический адрес
-  CorrespondencePostalAddress String // Корреспондентский Почтовый адрес
-  NumberPhone                 String // Номер телефона
-  PostalAddress               String // Офиц. Адресс почты
-  SuppliersWebsite            String? // Сайт поставщика
-  FIOOfTheHead                String // ФИО руководителя
-  DocOfTheHead                String // Документ подтверждающий полномочия руководителя
-  CreateTime                  DateTime           @default(now()) // Время Создания
-  Catalog                     CatalogProviders[] // Каталог товаров поставщика
+  description                 String // Описание Поставщика
+  supplierEvaluation          Decimal?           @default(0) @db.Decimal(10, 2) // Оценка поставщика 
+  minOrderBatch               Int // Минимальная цена заказа
+  registeredAddress           String // Юридический адрес
+  actualAddress               String // Фактический адрес
+  correspondencePostalAddress String // Корреспондентский Почтовый адрес
+  numberPhone                 String // Номер телефона
+  postalAddress               String // Офиц. Адресс почты
+  suppliersWebsite            String? // Сайт поставщика
+  fioOfTheHead                String // ФИО руководителя
+  docOfTheHead                String // Документ подтверждающий полномочия руководителя
+  createTime                  DateTime           @default(now()) // Время Создания
+  catalog                     CatalogProviders[] // Каталог товаров поставщика
+  isDeleted                   Boolean            @default(false)
+  deletedAt                   DateTime?
 }
 
 // Еденицы изменения
 enum Unit {
-  шт
-  кг
-  м
-  палеты
+  PIECE
+  KG
+  METER
+  PALLET
 }
 
 // Каталог товаров поставщика
 model CatalogProviders {
-  id                  Int                   @id @default(autoincrement())
-  NameProduct         String // Название товара
-  Price               Decimal               @db.Decimal(10, 2) // Цена товара
-  QuantityProduct     Int // Наличие на складе
-  CodeProduct         String // Код товара
-  DescriptionProduct  String // Описание товара
-  UnitOfMeasurement   Unit                  @default(шт) // Еденица измерения 
-  provider          provider?            @relation(fields: [providerId], references: [id]) // Привязка каталога к поставщику
-  providerId         Int? // id поставщика
-  DetailedInformation DetailedInformation[] // Подробная информация о товаре
+  id                  Int                  @id @default(autoincrement())
+  nameProduct         String // Название товара
+  price               Decimal              @db.Decimal(10, 2) // Цена товара
+  quantityProduct     Int // Наличие на складе
+  codeProduct         String // Код товара
+  descriptionProduct  String // Описание товара
+  unitOfMeasurement   Unit                 @default(PIECE) // Единицы измерения 
+  provider            provider?            @relation(fields: [providerId], references: [id]) // Привязка каталога к поставщику
+  providerId          Int? // id поставщика
+  detailedInformation DetailedInformation? // Подробная информация о товаре
+
   @@index([providerId])
 }
 
 // Подробная информация товара 
 model DetailedInformation {
   id                       Int                             @id @default(autoincrement())
-  ImageProduct             String // Изображение товара
-  Description              String // Описание товара
-  DopInfoUnitOfMeasurement String? // Дополнительная информация Едениц измерения
-  AccurateDescription      AccurateDescriptionContent[] // Точное описание
-  UnitPrice                UnitPriceContent[] // Цена за еденицу товара
-  ConditionsCurrency       String? // Условия валюты
-  ConditionsDiscount       String? // Условия скидки от объема 
-  ConditionsPepayments     String? // Условия предоплаты
-  AddTechnicalAdvantages   AddTechnicalAdvantagesContent[] // Дополнительные технические преимущества
+  imageProduct             String // Изображение товара
+  description              String // Описание товара
+  code                     String // Код товара
+  dopInfoUnitOfMeasurement String? // Дополнительная информация Едениц измерения
+  accurateDescription      AccurateDescriptionContent[] // Точное описание
+  unitPrice                UnitPriceContent? // Цена за еденицу товара
+  inStockand               InStockandContent[] // Наличие на складе
+  productionTime           String // Срок изгатовления
+  workingConditions        WorkingConditionsContent[] // Условия работы
+  deliveryTerms            DeliveryTermsContent[] // Условия доставки
+  addTechnicalAdvantages   AddTechnicalAdvantagesContent[] // Дополнительные технические преимущества
   catalogProviders         CatalogProviders?               @relation(fields: [catalogProvidersId], references: [id], onDelete: Cascade) // Привязка к каталогу товаров
-  catalogProvidersId       Int? // id товара
+  catalogProvidersId       Int?                            @unique // id товара
+}
 
-  @@index([catalogProvidersId])
+// Условия работы
+model WorkingConditionsContent {
+  id                    Int                  @id @default(autoincrement())
+  type                  String // Тип Условия работы
+  description           String // Описание Типа условия работы
+  detailedInformation   DetailedInformation? @relation(fields: [detailedInformationId], references: [id], onDelete: Cascade) // Привязка к подробной инфо о товаре
+  detailedInformationId Int?
+
+  @@index([detailedInformationId])
+}
+
+// Условия доставки
+model DeliveryTermsContent {
+  id                    Int                  @id @default(autoincrement())
+  type                  String // Тип условия доставки
+  description           String // Описание типа
+  detailedInformation   DetailedInformation? @relation(fields: [detailedInformationId], references: [id], onDelete: Cascade) // Привязка к подробной инфо о товаре
+  detailedInformationId Int?
+
+  @@index([detailedInformationId])
+}
+
+// Наличие на складе
+model InStockandContent {
+  id                    Int                  @id @default(autoincrement())
+  warehouse             String // Склад
+  availability          Boolean // Наличие или нет 
+  detailedInformation   DetailedInformation? @relation(fields: [detailedInformationId], references: [id], onDelete: Cascade) // Привязка к подробной инфо о товаре
+  detailedInformationId Int?
+
+  @@index([detailedInformationId])
 }
 
 // Доп. Тех. Преймущества 
@@ -80,8 +116,7 @@ model AddTechnicalAdvantagesContent {
   id                    Int                  @id @default(autoincrement())
   type                  String // Тип Доп. тех. преймущевства
   description           String // Описание тех. преймущевства
-  SortOrder             Int                  @default(0) // Порядок отображения
-  detailedInformation   DetailedInformation? @relation(fields: [detailedInformationId], references: [id]) // Привязка к подробной инфо о товаре
+  detailedInformation   DetailedInformation? @relation(fields: [detailedInformationId], references: [id], onDelete: Cascade) // Привязка к подробной инфо о товаре
   detailedInformationId Int?
 
   @@index([detailedInformationId])
@@ -90,23 +125,22 @@ model AddTechnicalAdvantagesContent {
 // Контент Цены за еденицу товара
 model UnitPriceContent {
   id                    Int                  @id @default(autoincrement())
-  Retail                Int // Розничная цена
-  Bulk                  Int // Оптовая цена
-  WarningMessage        String? // Предупреждающее сообщение о цене
-  SortOrder             Int                  @default(0) // Порядок отображения
-  detailedInformation   DetailedInformation? @relation(fields: [detailedInformationId], references: [id]) // Привязка к подробной инфо о товаре
-  detailedInformationId Int?
-
-  @@index([detailedInformationId])
+  minRetail             Decimal              @db.Decimal(10, 2) // Розничная цена минимальная
+  maxRetail             Decimal              @db.Decimal(10, 2) // Розничная цена максимальная
+  minBulk               Decimal              @db.Decimal(10, 2) // Оптовая цена минимальная
+  maxBulk               Decimal              @db.Decimal(10, 2) // Оптовая цена максимальная
+  priceNote             String? // Доп. текст к цене
+  warningMessage        String? // Предупреждающее сообщение о цене
+  detailedInformation   DetailedInformation? @relation(fields: [detailedInformationId], references: [id], onDelete: Cascade) // Привязка к подробной инфо о товаре
+  detailedInformationId Int?                 @unique // id подробной информации
 }
 
 // Точное описание товара
 model AccurateDescriptionContent {
   id                    Int                  @id @default(autoincrement())
-  Size                  String // Размер продукта
-  Color                 String // Цвет продукта
-  Compound              CompoundContent[] // Состав/Материалы товара
-  SortOrder             Int                  @default(0) // Порядок отображения
+  type                  String // Тип точного описание
+  description           String // Описание типа 
+  compound              CompoundContent[] // Состав/Материалы товара
   detailedInformation   DetailedInformation? @relation(fields: [detailedInformationId], references: [id], onDelete: Cascade) // Привязка точного описания к подробной инфо товара
   detailedInformationId Int? // id подробной информации товара
 
@@ -116,8 +150,8 @@ model AccurateDescriptionContent {
 // Контент Состава/Материалов товара
 model CompoundContent {
   id                           Int                         @id @default(autoincrement())
-  Compound                     String // Материал/Состав
-  SortOrder                    Int                         @default(0) // Порядок отображения
+  nameCompound                 String // Материал
+  compound                     String // Состав
   accurateDescriptionContent   AccurateDescriptionContent? @relation(fields: [accurateDescriptionContentId], references: [id], onDelete: Cascade) // Привяка контента Состава/Материалов к точное описание товара 
   accurateDescriptionContentId Int? // id точного описания товара
 
