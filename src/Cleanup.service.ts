@@ -18,21 +18,34 @@ export class CleanUpService {
     async cleanUpDeletedProviders() {
         const deletedProviders = await this.prisma.provider.findMany({
             where: { isDeleted: true },
-            select: { id: true, imageProviders: true, logoSupplierCompany: true, docOfTheHead: true },
+            include: {
+                catalog: {
+                    include: {
+                        detailedInformation: {
+                            select: { imageProduct: true }
+                        }
+                    }
+                }
+            }
         })
+
+        if (deletedProviders.length === 0) {
+            return
+        }
+        this.logger.log(`Найдено ${deletedProviders.length} поставщиков для удаления`)
 
         let successCount = 0
         let errorCount = 0
 
         for (const provider of deletedProviders) {
-            if (deletedProviders.length === 0) {
-                return
-            }
-            this.logger.log(`Найдено ${deletedProviders.length} поставщиков для удаления`)
             try {
-                if (provider.imageProviders) await this.s3.deleteFile(provider.imageProviders);
-                if (provider.logoSupplierCompany) await this.s3.deleteFile(provider.logoSupplierCompany);
-                if (provider.docOfTheHead) await this.s3.deleteFile(provider.docOfTheHead);
+                const filesToDelete = this.extractFilePaths(provider)
+
+                if(filesToDelete.length > 0){
+                    Promise.allSettled(
+                        filesToDelete.map(filePath => this.s3.deleteFile(filePath))
+                    )
+                }
 
                 await this.prisma.provider.delete({ where: { id: provider.id } })
                 successCount++
@@ -42,5 +55,23 @@ export class CleanUpService {
             }
         }
         this.logger.log(`Успешно удаллено ${successCount} Поставщиков. Ошибок в удалении ${errorCount}`)
+    }
+
+    private extractFilePaths(obj: any): string[]{
+        const paths: string[] = []
+
+        const traverse = (current: any) => {
+            if(typeof current === 'string' && current.trim().length > 0){
+                if(current.includes('/') || current.startsWith('http')){
+                    paths.push(current)
+                }
+            } else if(current && typeof current === 'object'){
+                Object.values(current).forEach(traverse)
+            }
+        }
+
+        traverse(obj)  
+
+        return [...new Set(paths)]
     }
 }

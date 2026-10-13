@@ -1,10 +1,10 @@
 export function slugify(originalname: string): string {
   const decoded = Buffer.from(originalname, 'latin1').toString('utf8');
-  
   const lastDot = decoded.lastIndexOf('.');
-  const name = lastDot > 0 ? decoded.substring(0, lastDot) : decoded;
-  const ext = lastDot > 0 ? decoded.substring(lastDot + 1) : 'png';
-  
+  const hasExtension = lastDot > 0;
+  const name = hasExtension ? decoded.substring(0, lastDot) : decoded;
+  const ext = hasExtension ? decoded.substring(lastDot + 1) : '';
+
   const map: Record<string, string> = {
     'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
     'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
@@ -18,7 +18,7 @@ export function slugify(originalname: string): string {
     'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya',
     ' ': '-', '_': '-'
   };
-  
+
   let slug = '';
   for (const char of name) {
     slug += map[char] || char;
@@ -26,11 +26,11 @@ export function slugify(originalname: string): string {
 
   slug = slug
     .replace(/[<>:"/\\|?*]/g, '')
-    .replace(/[^a-zA-Z0-9.-]/g, '-') 
-    .replace(/-+/g, '-')          
-    .replace(/^-|-$/g, '')        
+    .replace(/[^a-zA-Z0-9.-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
     .toLowerCase()
-    .substring(0, 50);           
-  
-  return `${slug}.${ext}`;
+    .substring(0, 50);
+
+  return hasExtension ? `${slug}.${ext}` : (slug || 'unknown');
 }

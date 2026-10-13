@@ -48,8 +48,8 @@ enum Unit {
 model CatalogProviders {
   id                  Int                  @id @default(autoincrement())
   nameProduct         String // Название товара
-  price               Decimal              @db.Decimal(10, 2) // Цена товара
-  quantityProduct     Int // Наличие на складе
+  price               Decimal              @db.Decimal(10, 2) // Цена товара  
+  quantityProduct     Int // Количевство наличия на складе
   codeProduct         String // Код товара
   descriptionProduct  String // Описание товара
   unitOfMeasurement   Unit                 @default(PIECE) // Единицы измерения 
@@ -63,9 +63,8 @@ model CatalogProviders {
 // Подробная информация товара 
 model DetailedInformation {
   id                       Int                             @id @default(autoincrement())
-  imageProduct             String // Изображение товара
+  imageProduct             productImage[] // Изображение товара 
   description              String // Описание товара
-  code                     String // Код товара
   dopInfoUnitOfMeasurement String? // Дополнительная информация Едениц измерения
   accurateDescription      AccurateDescriptionContent[] // Точное описание
   unitPrice                UnitPriceContent? // Цена за еденицу товара
@@ -76,6 +75,14 @@ model DetailedInformation {
   addTechnicalAdvantages   AddTechnicalAdvantagesContent[] // Дополнительные технические преимущества
   catalogProviders         CatalogProviders?               @relation(fields: [catalogProvidersId], references: [id], onDelete: Cascade) // Привязка к каталогу товаров
   catalogProvidersId       Int?                            @unique // id товара
+}
+
+model productImage {
+  id                    Int                  @id @default(autoincrement())
+  url                   String
+  sortOrder             Int                  @default(0)
+  detailedInformation   DetailedInformation? @relation(fields: [detailedInformationId], references: [id], onDelete: Cascade) // Привязка к подробной инфо о товаре
+  detailedInformationId Int?
 }
 
 // Условия работы

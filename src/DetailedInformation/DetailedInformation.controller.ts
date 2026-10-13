@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from "@nestjs/common";
-import { ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { DetailedInformationService } from "./DetailedInformation.service";
-import { CreateDetailedInformation, UpdateDetailedInformation } from "./DTO/DetailedInformation.dto";
+import { CreateDetailedInformation, CreateImageProduct, UpdateDetailedInformation } from "./DTO/DetailedInformation.dto";
+import { FileFieldsInterceptor, FileInterceptor } from "@nestjs/platform-express";
 
 
 @ApiTags('Детальная информация Товара')
@@ -35,9 +36,21 @@ export class DetailedInformationController{
         return this.detailedInformationService.createDetInfo(dto, catalogProviderId)
     }
 
+    @Post(':idDetInfo/imageProduct')
+    @ApiOperation({summary: 'Добавить изображение к детальной информации'})
+    @ApiConsumes('multipart/form-data')
+    @UseInterceptors(FileInterceptor('imageProduct'))
+    async addImageProduct(
+        @Body() dto: CreateImageProduct,
+        @Param('idDetInfo', ParseIntPipe) id: number,
+        @UploadedFile() imageProduct: Express.Multer.File
+    ){
+        return this.detailedInformationService.addImageProduct(id, dto, imageProduct)
+    }
+
     @Patch(':detInfoId')
     @ApiOperation({summary: 'Обновить детальную информацию'})
-    @ApiConsumes('multypart/form-data')
+    @ApiConsumes('application/json')
     async updateDetInfo(
         @Body() dto: UpdateDetailedInformation,
         @Param('detInfoId', ParseIntPipe) detInfoId: number
@@ -45,9 +58,11 @@ export class DetailedInformationController{
         return this.detailedInformationService.updateDetInfo(dto, detInfoId)
     }
 
-    @Delete()
-    @ApiOperation({summary: 'Удалить все детальные информации'})
-    async deleteAll(){
-        return this.detailedInformationService.deleteAll()
+    @Delete(':id')
+    @ApiOperation({summary: 'Удалить детальную информацию по id'})
+    async deleteById(
+        @Param('id', ParseIntPipe) id: number
+    ){
+        return this.detailedInformationService.deleteById(id)
     }
 }

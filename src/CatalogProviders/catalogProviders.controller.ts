@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from "@nestjs/common";
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { catalogProvidersService } from "./catalogProviders.service";
 import { CreateCatalogProviders } from './DTO/catalogProviders.dto'
@@ -20,7 +20,7 @@ export class catalogProvidersController {
     @Get(':id')
     @ApiOperation({ summary: 'Получить каталог поставщика по id' })
     async getIdCatalog(
-        @Param('id') id: number
+        @Param('id', ParseIntPipe) id: number
     ) {
         return this.catalogProvidersService.getIdCatalog(id)
     }
@@ -30,7 +30,7 @@ export class catalogProvidersController {
     @ApiConsumes('application/x-www-form-urlencoded')
     async createCatalog(
         @Body() dto: CreateCatalogProviders,
-        @Param('id') id: number
+        @Param('id', ParseIntPipe) id: number
     ) {
         return this.catalogProvidersService.createCatalog(dto, id)
     }
@@ -40,9 +40,17 @@ export class catalogProvidersController {
     @ApiConsumes('application/x-www-form-urlencoded')
     async patchCatalog(
         @Body() dto: CreateCatalogProviders,
-        @Param('id') id: number
+        @Param('id', ParseIntPipe) id: number
     ){
         return this.catalogProvidersService.patchCatalog(dto, id)
+    }
+
+    @Delete(':id')
+    @ApiOperation({summary: 'Удалить котолог по id'})
+    async deleteById(
+        @Param('id', ParseIntPipe) id: number
+    ){
+        return this.catalogProvidersService.deleteById(id)
     }
 
 }

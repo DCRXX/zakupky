@@ -3,24 +3,17 @@ import { ArrayMaxSize, IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, Vali
 import { CreateAccurateDescriptionContent } from "./AccurateDescriptionContent.dto";
 import { CreateUnitPriceContent } from "./UnitPriceContent.dto";
 import { CreateAddTechnicalAdvantagesContent, CreateDeliveryTerms, CreateWorkingConditions } from "./AddTechnicalAdvantagesContent.dto";
-import { Type } from "class-transformer";
+import { Transform, Type } from "class-transformer";
 import { CreateInStockand } from "./InStockand.dto";
 
 
 export class CreateDetailedInformation {
-    @ApiProperty({ description: 'Изображение товара', example: '', format: 'binary' })
-    @IsNotEmpty()
-    imageProduct: string
+    
 
     @ApiProperty({ description: 'Описание товара', example: '' })
     @IsString()
     @IsNotEmpty()
     description: string
-
-    @ApiProperty({ description: 'Код товара', example: '' })
-    @IsString()
-    @IsOptional()
-    code: string
 
     @ApiProperty({ description: 'Дополнительная информация Едениц измерения', example: '', required: false })
     @IsString()
@@ -129,7 +122,9 @@ export class UpdateDetailedInformation extends PartialType(
 
     @ApiPropertyOptional({
         description: 'ID записей AddTechnicalAdvantages, которые нужно удалить',
-        type: [Number]
+        required: false,
+        isArray: true,
+        type: Number
     })
     @IsOptional()
     @IsArray()
@@ -138,7 +133,9 @@ export class UpdateDetailedInformation extends PartialType(
 
     @ApiPropertyOptional({
         description: 'ID записей AccurateDescription, которые нужно удалить',
-        type: [Number]
+        required: false,
+        isArray: true,
+        type: Number
     })
     @IsOptional()
     @IsArray()
@@ -147,7 +144,9 @@ export class UpdateDetailedInformation extends PartialType(
 
     @ApiPropertyOptional({
         description: 'ID записей Compound, которые нужно удалить',
-        type: [Number]
+        required: false,
+        isArray: true,
+        type: Number
     })
     @IsOptional()
     @IsArray()
@@ -156,28 +155,66 @@ export class UpdateDetailedInformation extends PartialType(
 
     @ApiPropertyOptional({
         description: 'ID записей InStockand, которые нужно удалить',
-        type: [Number]
+        required: false,
+        isArray: true,
+        type: Number
     })
     @IsOptional()
     @IsArray()
     @IsNumber({}, { each: true })
-    deleteInStockandIds?:number[]
+    deleteInStockandIds?: number[]
 
     @ApiPropertyOptional({
         description: 'ID записай WorkingConditions, которые нужно удалить',
-        type: [Number]
+        required: false,
+        isArray: true,
+        type: Number
     })
     @IsOptional()
     @IsArray()
-    @IsNumber({}, {each: true})
+    @IsNumber({}, { each: true })
     deleteWorkingConditionsIds?: number[]
 
     @ApiPropertyOptional({
         description: 'ID записей DeliveryTerms, которые нйжно удалить',
-        type: [Number]
+        required: false,
+        isArray: true,
+        type: Number
     })
     @IsOptional()
     @IsArray()
-    @IsNumber({}, {each: true})
+    @IsNumber({}, { each: true })
     deleteDeliveryTermsIds?: number[]
+}
+
+export class CreateImageProduct {
+    @IsNumber()
+    @IsOptional()
+    id?: number
+
+    @ApiProperty({ description: 'Изображения товара', format: 'binary', type: 'string', required: false })
+    @IsOptional()
+    imageProduct?: Express.Multer.File
+
+    @ApiProperty({ description: 'Порядок отображения', enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] })
+    @IsNumber()
+    @IsOptional()
+    sortOrder: number
+
+    @ApiProperty({description: 'ID изображений для удаления', type: [Number], required: false})
+    @IsOptional()
+    @Transform(({ value }) => {
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed : [Number(parsed)];
+            } catch {
+                return value.split(',').map((v) => Number(v.trim()));
+            }
+        }
+        return value;   
+    })
+    @IsArray()
+    @IsNumber({}, { each: true })
+    deleteUrl?: number[]
 }
